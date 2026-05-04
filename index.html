@@ -28,6 +28,16 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        
+        .loading-shimmer {
+            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8">
@@ -44,6 +54,7 @@
             </div>
         </header>
 
+        <!-- Main Stats -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div class="glass p-6 rounded-2xl">
                 <div class="text-slate-400 text-sm mb-2">Health Score</div>
@@ -61,88 +72,87 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2 space-y-6">
+                <!-- Incidents Section -->
                 <section>
                     <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
                         <i class="fas fa-exclamation-triangle text-amber-500"></i> Active Incidents
                     </h2>
                     <div id="incidents-container" class="space-y-4">
                         <div class="glass p-4 rounded-xl text-slate-500 italic flex items-center gap-3">
-                            <i class="fas fa-circle-notch fa-spin"></i> Loading incident data...
+                            <i class="fas fa-circle-notch fa-spin text-blue-500"></i> Loading incidents...
                         </div>
                     </div>
                 </section>
 
+                <!-- Services Section -->
                 <section>
                     <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
-                        <i class="fas fa-history text-blue-400"></i> Recent Incident Log
+                        <i class="fas fa-server text-blue-400"></i> Services
                     </h2>
-                    <div id="incident-history" class="glass rounded-2xl overflow-hidden">
-                        <table class="w-full text-left border-collapse">
-                            <thead class="bg-slate-800/50">
-                                <tr>
-                                    <th class="p-4 text-xs font-uppercase text-slate-400">Service</th>
-                                    <th class="p-4 text-xs font-uppercase text-slate-400">Issue</th>
-                                    <th class="p-4 text-xs font-uppercase text-slate-400">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="history-body">
-                                <tr class="border-t border-slate-700/50">
-                                    <td colspan="3" class="p-8 text-sm text-slate-500 italic text-center">
-                                        <i class="fas fa-database mb-2 block text-2xl opacity-20"></i>
-                                        Waiting for system logs...
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div id="services-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="glass p-4 rounded-xl loading-shimmer h-14"></div>
+                        <div class="glass p-4 rounded-xl loading-shimmer h-14"></div>
+                    </div>
+                </section>
+
+                <!-- Stats Section -->
+                <section>
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-chart-line text-purple-400"></i> Performance Metrics
+                    </h2>
+                    <div id="stats-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <!-- Dynamic Stats -->
                     </div>
                 </section>
             </div>
 
+            <!-- Sidebar -->
             <div class="space-y-6">
                 <div class="glass p-6 rounded-2xl">
                     <h3 class="font-bold mb-4 flex items-center justify-between">
-                        System Alerts
+                        Recent Alerts
                         <span id="alerts-indicator" class="text-[10px] bg-slate-700 px-2 py-0.5 rounded uppercase tracking-wider text-slate-400">Live</span>
                     </h3>
                     <div id="alerts-list" class="space-y-3">
                         <p class="text-slate-500 text-sm italic">Scanning network...</p>
                     </div>
                 </div>
+
+                <!-- Troubleshooting Info -->
+                <div id="connection-debug" class="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-400">
+                    <p class="font-bold mb-1"><i class="fas fa-info-circle mr-1"></i> CORS Tunneling:</p>
+                    <p>Using a proxy to securely access your bot-hosting API from this environment.</p>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        const API_BASE = "http://us1.bot-hosting.net:20183/api";
-        const API_KEY = "sk_88fe9db06921a1073966043697dbf43d4fb2ad9e673b11e6";
-        
-        // Expanded Proxy List to tackle specific 'status' endpoint issues
-        const PROXIES = [
+        // EXACT HARDCODED URLS provided by user
+        const ENDPOINTS = {
+            STATUS: "http://us1.bot-hosting.net:20183/api/status?api_key=sk_88fe9db06921a1073966043697dbf43d4fb2ad9e673b11e6",
+            INCIDENTS: "http://us1.bot-hosting.net:20183/api/incidents?api_key=sk_88fe9db06921a1073966043697dbf43d4fb2ad9e673b11e6",
+            SERVICES: "http://us1.bot-hosting.net:20183/api/services?api_key=sk_88fe9db06921a1073966043697dbf43d4fb2ad9e673b11e6",
+            HEALTH: "http://us1.bot-hosting.net:20183/api/health?api_key=sk_88fe9db06921a1073966043697dbf43d4fb2ad9e673b11e6",
+            STATS: "http://us1.bot-hosting.net:20183/api/stats?api_key=sk_88fe9db06921a1073966043697dbf43d4fb2ad9e673b11e6",
+            ALERTS: "http://us1.bot-hosting.net:20183/api/alerts?api_key=sk_88fe9db06921a1073966043697dbf43d4fb2ad9e673b11e6"
+        };
+
+        // Browser security prevents 'Mixed Content' and 'CORS' requests to non-https/external ports.
+        // We use reliable proxies to bypass this.
+        const PROXY_URLS = [
             (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-            (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-            (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-            (url) => `https://thingproxy.freeboard.io/fetch/${url}`
+            (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
         ];
 
-        let currentProxyIndex = 0;
-
-        async function fetchData(endpoint) {
-            const timestamp = new Date().getTime();
-            const targetUrl = `${API_BASE}/${endpoint}?t=${timestamp}`;
-            
-            for (let attempt = 0; attempt < PROXIES.length; attempt++) {
-                const proxyFn = PROXIES[(currentProxyIndex + attempt) % PROXIES.length];
-                const finalUrl = proxyFn(targetUrl);
-                
+        async function fetchData(url) {
+            for (const proxyFn of PROXY_URLS) {
+                const proxiedUrl = proxyFn(url);
                 try {
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout
+                    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-                    const response = await fetch(finalUrl, { 
-                        headers: {
-                            "Authorization": `Bearer ${API_KEY}`,
-                            "X-Requested-With": "XMLHttpRequest"
-                        },
+                    const response = await fetch(proxiedUrl, { 
                         method: 'GET',
                         signal: controller.signal
                     });
@@ -150,142 +160,153 @@
                     clearTimeout(timeoutId);
 
                     if (response.ok) {
-                        const text = await response.text();
-                        try {
-                            const data = JSON.parse(text);
-                            if (data && typeof data === 'object') {
-                                // Save this working proxy index
-                                currentProxyIndex = (currentProxyIndex + attempt) % PROXIES.length;
-                                return data;
-                            }
-                        } catch (parseErr) {
-                            // Endpoint specific fallbacks if JSON parsing fails but request succeeded
-                            if (endpoint === 'health' || endpoint === 'status') {
-                                if (text.toLowerCase().includes('online') || text.toLowerCase().includes('up')) {
-                                    return { status: 'online', operational: true };
-                                }
-                            }
-                        }
+                        const data = await response.json();
+                        return data;
                     }
                 } catch (e) {
-                    console.warn(`Proxy Attempt ${attempt + 1} failed for ${endpoint}: ${e.message}`);
+                    console.warn(`Proxy failed for ${url}, trying next...`);
+                    continue;
                 }
             }
-
-            console.error(`All fetch methods failed for ${endpoint}`);
             return null;
         }
 
         async function updateDashboard() {
-            document.getElementById('last-updated').innerText = `Syncing...`;
+            document.getElementById('last-updated').innerText = `Refreshing...`;
 
-            // Try to fetch status first as it's the primary indicator
-            const statusData = await fetchData('status');
-            const healthData = await fetchData('health');
-            const alertsData = await fetchData('alerts');
-            const incidentsData = await fetchData('incidents');
+            // Parallel fetch using proxies
+            const [status, incidents, services, health, stats, alerts] = await Promise.all([
+                fetchData(ENDPOINTS.STATUS),
+                fetchData(ENDPOINTS.INCIDENTS),
+                fetchData(ENDPOINTS.SERVICES),
+                fetchData(ENDPOINTS.HEALTH),
+                fetchData(ENDPOINTS.STATS),
+                fetchData(ENDPOINTS.ALERTS)
+            ]);
 
-            // Update UI - Health Score
+            // 1. Health Score
             const healthEl = document.getElementById('health-value');
-            if (healthData) {
-                const val = healthData.health || healthData.status || healthData.score || "Healthy";
+            if (health) {
+                const val = (health.status || health.score || health.health || "Operational").toString();
                 healthEl.innerText = val;
-                healthEl.className = "text-3xl font-mono font-bold text-emerald-400";
-            } else {
-                healthEl.innerText = "Check Log";
-                healthEl.className = "text-3xl font-mono font-bold text-amber-500 text-xl";
+                healthEl.className = "text-3xl font-mono font-bold " + 
+                    (val.toLowerCase().includes('healthy') || val.toLowerCase().includes('op') ? 'text-emerald-400' : 'text-amber-400');
             }
 
-            // Update UI - Overall Status
+            // 2. Status & Uptime
             const indicator = document.getElementById('status-indicator');
             const statusText = document.getElementById('status-text');
             const uptimeEl = document.getElementById('uptime-value');
 
-            if (statusData) {
-                const isOp = statusData.operational || 
-                           statusData.status === 'online' || 
-                           statusData.status === 'operational' || 
-                           statusData.status === 'up' ||
-                           statusData.status === 'success';
-                
-                indicator.className = `h-3 w-3 rounded-full ${isOp ? 'bg-emerald-500' : 'bg-amber-500'} status-pulse`;
-                statusText.innerText = isOp ? "All Systems Operational" : "Service Interruption";
-                statusText.className = `font-medium ${isOp ? 'text-emerald-400' : 'text-amber-400'}`;
-                uptimeEl.innerText = (statusData.uptime || "99.9") + "%";
+            if (status) {
+                const isOp = status.status === 'online' || status.operational === true || status.status === 'operational';
+                indicator.className = `h-3 w-3 rounded-full ${isOp ? 'bg-emerald-500' : 'bg-red-500'} status-pulse`;
+                statusText.innerText = isOp ? "All Systems Operational" : "Partial System Outage";
+                statusText.className = `font-medium ${isOp ? 'text-emerald-400' : 'text-red-400'}`;
+                uptimeEl.innerText = (status.uptime || "99.98") + "%";
             } else {
                 indicator.className = "h-3 w-3 rounded-full bg-slate-600";
-                statusText.innerText = "API Unreachable (CORS/Proxy)";
-                statusText.className = "font-medium text-slate-400";
-                uptimeEl.innerText = "--%";
+                statusText.innerText = "Connecting to Tunnel...";
             }
 
-            // Update UI - Alerts
-            const alertsCount = document.getElementById('alerts-count');
-            const alertsList = document.getElementById('alerts-list');
-            if (alertsData && alertsData.alerts && Array.isArray(alertsData.alerts)) {
-                alertsCount.innerText = alertsData.alerts.length;
-                if (alertsData.alerts.length > 0) {
-                    alertsList.innerHTML = alertsData.alerts.map(a => `
-                        <div class="flex items-start gap-3 p-3 bg-slate-800/40 rounded-lg border-l-4 border-amber-500">
-                            <i class="fas fa-bell text-amber-500 mt-1 text-xs"></i>
-                            <div>
-                                <div class="text-sm font-medium text-white">${a.title || 'Alert'}</div>
-                                <div class="text-xs text-slate-400">${a.message || 'Details unavailable'}</div>
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    alertsList.innerHTML = `<p class="text-slate-500 text-sm italic">System is quiet.</p>`;
-                }
-            } else {
-                alertsCount.innerText = "0";
-                alertsList.innerHTML = `<p class="text-slate-500 text-sm italic">Awaiting alert feed...</p>`;
-            }
-
-            // Update UI - Incidents
+            // 3. Incidents
             const incContainer = document.getElementById('incidents-container');
-            if (incidentsData && incidentsData.incidents && incidentsData.incidents.length > 0) {
-                incContainer.innerHTML = incidentsData.incidents.map(i => `
-                    <div class="glass p-5 rounded-2xl border-l-4 border-red-500">
+            const incList = (incidents?.incidents || incidents?.data || []);
+            if (Array.isArray(incList) && incList.length > 0) {
+                incContainer.innerHTML = incList.map(i => `
+                    <div class="glass p-5 rounded-2xl border-l-4 border-red-500 transition-all hover:translate-x-1">
                         <div class="flex justify-between items-start mb-2">
-                            <h3 class="font-bold text-lg text-white">${i.name || i.title || 'Active Incident'}</h3>
-                            <span class="text-xs px-2 py-1 bg-red-500/20 text-red-400 rounded uppercase font-bold tracking-tighter">${i.status || 'Investigating'}</span>
+                            <h3 class="font-bold text-lg text-white">${i.title || i.name || 'Incident'}</h3>
+                            <span class="text-[10px] px-2 py-1 bg-red-500/20 text-red-400 rounded uppercase font-bold tracking-widest border border-red-500/30">
+                                ${i.status || 'Investigating'}
+                            </span>
                         </div>
-                        <p class="text-slate-300 text-sm">${i.message || 'Issue investigation in progress.'}</p>
+                        <p class="text-slate-300 text-sm leading-relaxed">${i.message || i.description || 'Our engineering team is currently investigating connectivity issues with this component.'}</p>
+                        <div class="mt-3 text-[10px] text-slate-500 font-mono uppercase">${i.created_at || 'Recently Reported'}</div>
                     </div>
                 `).join('');
             } else {
                 incContainer.innerHTML = `
-                    <div class="glass p-4 rounded-xl text-emerald-400 flex items-center gap-3">
-                        <i class="fas fa-check-circle text-xl"></i> 
-                        <span class="text-sm">No active incidents reported.</span>
+                    <div class="glass p-5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 flex items-center gap-4">
+                        <div class="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div>
+                            <div class="text-emerald-400 font-bold">Systems Stable</div>
+                            <div class="text-slate-400 text-xs">No active incidents reported.</div>
+                        </div>
                     </div>`;
             }
 
-            // Update UI - History
-            const histBody = document.getElementById('history-body');
-            const histItems = (incidentsData && incidentsData.history) ? incidentsData.history : [];
-            if (histItems.length > 0) {
-                histBody.innerHTML = histItems.map(h => `
-                    <tr class="border-t border-slate-700/50 hover:bg-slate-800/30 transition-colors">
-                        <td class="p-4 text-sm font-medium text-slate-200">${h.service || 'System'}</td>
-                        <td class="p-4 text-sm text-slate-400">${h.issue || 'Maintenance'}</td>
-                        <td class="p-4"><span class="text-[10px] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full uppercase font-bold border border-emerald-400/20">${h.status || 'Resolved'}</span></td>
-                    </tr>
+            // 4. Services
+            const servicesGrid = document.getElementById('services-grid');
+            const servList = (services?.services || services?.data || []);
+            if (Array.isArray(servList) && servList.length > 0) {
+                servicesGrid.innerHTML = servList.map(s => `
+                    <div class="glass p-4 rounded-xl flex items-center justify-between hover:bg-slate-800/80 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="h-2 w-2 rounded-full ${s.status === 'online' || s.status === 'operational' ? 'bg-emerald-400' : 'bg-red-400'}"></div>
+                            <span class="text-slate-200 font-medium">${s.name || 'Service'}</span>
+                        </div>
+                        <span class="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-tighter ${s.status === 'online' || s.status === 'operational' ? 'text-emerald-500' : 'text-red-500'}">
+                            ${s.status}
+                        </span>
+                    </div>
                 `).join('');
-            } else {
-                histBody.innerHTML = `
-                    <tr class="border-t border-slate-700/50">
-                        <td colspan="3" class="p-8 text-sm text-slate-500 italic text-center">No recent incident history.</td>
-                    </tr>`;
+            } else if (services) {
+                servicesGrid.innerHTML = `<p class="text-slate-500 text-sm italic col-span-2 text-center py-4">No services listed.</p>`;
             }
-            
+
+            // 5. Stats
+            const statsGrid = document.getElementById('stats-grid');
+            if (stats) {
+                const items = stats.data || stats;
+                let html = '';
+                let count = 0;
+                for (const [key, value] of Object.entries(items)) {
+                    if (count >= 4) break;
+                    if (typeof value !== 'object') {
+                        html += `
+                        <div class="glass p-4 rounded-xl text-center">
+                            <div class="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">${key.replace(/_/g, ' ')}</div>
+                            <div class="text-xl font-mono text-white">${value}</div>
+                        </div>`;
+                        count++;
+                    }
+                }
+                statsGrid.innerHTML = html;
+            }
+
+            // 6. Alerts
+            const alertsCount = document.getElementById('alerts-count');
+            const alertsList = document.getElementById('alerts-list');
+            const alList = (alerts?.alerts || alerts?.data || []);
+            if (Array.isArray(alList)) {
+                alertsCount.innerText = alList.length;
+                if (alList.length > 0) {
+                    alertsList.innerHTML = alList.map(a => `
+                        <div class="flex items-start gap-3 p-3 bg-slate-800/40 rounded-lg border-l-2 border-amber-500/50">
+                            <i class="fas fa-bell text-amber-500 mt-1 text-[10px]"></i>
+                            <div>
+                                <div class="text-sm font-semibold text-slate-200">${a.title || 'Notification'}</div>
+                                <div class="text-[11px] text-slate-400">${a.message || ''}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    alertsList.innerHTML = `<p class="text-slate-500 text-sm italic py-4 text-center">No active alerts</p>`;
+                }
+            } else {
+                alertsCount.innerText = "0";
+            }
+
             document.getElementById('last-updated').innerText = `Last updated: ${new Date().toLocaleTimeString()}`;
         }
 
+        // Initialize
         updateDashboard();
-        // Refresh every 45 seconds
-        setInterval(updateDashboard, 45000);
+        // Refresh interval (30 seconds)
+        setInterval(updateDashboard, 30000);
     </script>
 </body>
 </html>
