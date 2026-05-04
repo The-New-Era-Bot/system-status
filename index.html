@@ -3,83 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bot Hosting</title>
+    <title>Bot Status Dashboard</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, sans-serif; background: #0d1117; color: #c9d1d9; }
-        .container { width: 100%; height: 100vh; display: flex; flex-direction: column; }
-        header { background: #161b22; padding: 1rem; border-bottom: 1px solid #30363d; text-align: center; }
-        header h1 { font-size: 1.5rem; color: #58a6ff; }
-        
-        iframe { flex: 1; border: none; width: 100%; }
-
-        /* Fallback UI when Discord blocks the frame */
-        #auth-fallback {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 80vh;
-            text-align: center;
-            padding: 20px;
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; 
+            background: #0d1117; 
+            color: #c9d1d9; 
+            overflow: hidden; /* Prevents double scrollbars */
         }
-
-        .login-btn {
-            background-color: #5865F2;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 4px;
-            text-decoration: none;
-            font-weight: bold;
-            margin-top: 20px;
-            transition: background 0.2s;
+        .container { 
+            width: 100%; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
         }
-        .login-btn:hover { background-color: #4752c4; }
+        header { 
+            background: #161b22; 
+            padding: 1rem; 
+            border-bottom: 1px solid #30363d; 
+            text-align: center; 
+        }
+        header h1 { 
+            font-size: 1.2rem; 
+            color: #58a6ff; 
+        }
+        iframe { 
+            flex: 1; 
+            border: none; 
+            width: 100%; 
+            height: 100%;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Bot Hosting Dashboard</h1>
+            <h1>System Status</h1>
         </header>
         
-        <iframe id="dashboardFrame" src="https://unglue-smelting-rut.ngrok-free.dev/"></iframe>
-
-        <div id="auth-fallback">
-            <p>Connection to Discord is required to view your dashboard.</p>
-            <p style="font-size: 0.8rem; color: #8b949e; margin-top: 5px;">(Discord security prevents logging in inside an iframe)</p>
-            <a href="https://discord.com/oauth2/authorize?response_type=code&redirect_uri=https%3A%2F%2Funglue-smelting-rut.ngrok-free.dev%2Fauth%2Fdiscord%2Fcallback&scope=identify&client_id=1498434706625134636" 
-               target="_blank" 
-               class="login-btn">
-               Login with Discord
-            </a>
-        </div>
+        <iframe src="https://unglue-smelting-rut.ngrok-free.dev/status"></iframe>
     </div>
-
-    <script>
-        const frame = document.getElementById('dashboardFrame');
-        const fallback = document.getElementById('auth-fallback');
-
-        // Simple check: if the frame is blocked or doesn't load within 3 seconds, show the manual button
-        const loadTimeout = setTimeout(() => {
-            showFallback();
-        }, 3000);
-
-        function showFallback() {
-            frame.style.display = 'none';
-            fallback.style.display = 'flex';
-        }
-
-        // If you can modify the code on the server (ngrok side), 
-        // have it send a message to the parent: window.parent.postMessage('loaded', '*')
-        // Then this listener can hide the fallback if it's successful.
-        window.addEventListener('message', (event) => {
-            if (event.data === 'loaded') {
-                clearTimeout(loadTimeout);
-                fallback.style.display = 'none';
-                frame.style.display = 'block';
-            }
-        });
-    </script>
 </body>
 </html>
